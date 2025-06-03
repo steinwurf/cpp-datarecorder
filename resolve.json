@@ -1,0 +1,49 @@
+[
+    {
+        "name": "gtest",
+        "internal": true,
+        "resolver": "git",
+        "method": "semver",
+        "major": 6,
+        "sources": [
+            "github.com/steinwurf/gtest.git"
+        ]
+    },
+    {
+        "name": "toolchains",
+        "internal": true,
+        "resolver": "git",
+        "method": "semver",
+        "major": 1,
+        "sources": [
+            "github.com/steinwurf/cmake-toolchains.git"
+        ]
+    },
+    {
+        "name": "poke",
+        "resolver": "git",
+        "method": "semver",
+        "major": 16,
+        "sources": [
+            "github.com/steinwurf/poke.git"
+        ]
+    },
+    {
+        "name": "verify",
+        "resolver": "git",
+        "method": "semver",
+        "major": 6,
+        "sources": [
+            "github.com/steinwurf/verify.git"
+        ]
+    },
+    {
+        "name": "expected",
+        "resolver": "git",
+        "method": "semver",
+        "major": 2,
+        "sources": [
+            "github.com/steinwurf/expected.git"
+        ]
+    }
+]
