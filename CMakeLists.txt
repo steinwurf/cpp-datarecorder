@@ -68,6 +68,11 @@ if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
   # Google Test dependency
   add_subdirectory("${STEINWURF_RESOLVE}/gtest" EXCLUDE_FROM_ALL)
 
+  
+  # Get all steinwurf object libraries and link directly with them.
+  get_property(steinwurf_object_libraries GLOBAL
+    PROPERTY steinwurf::object_libraries)
+
   # Build test executable
   file(GLOB_RECURSE datarecorder_test_sources ./test/*.cpp)
 
@@ -75,6 +80,9 @@ if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
   add_executable(datarecorder_test ${datarecorder_test_sources})
   target_link_libraries(datarecorder_test datarecorder)
   target_link_libraries(datarecorder_test steinwurf::gtest)
+  target_link_libraries(datarecorder_test ${steinwurf_object_libraries})
+
+
 
   add_test(NAME datarecorder_test COMMAND datarecorder_test)
 

@@ -7,22 +7,32 @@
 
 #pragma once
 
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <optional>
+#include <regex>
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
+#include <poke/make_error.hpp>
 #include <poke/monitor.hpp>
 #include <tl/expected.hpp>
 #include <verify/verify.hpp>
 
-#include "data_mismatch.hpp"
+#include "mismatch_info.hpp"
 #include "to_json_property.hpp"
 
-namespace util
+namespace datarecorder
 {
 
 /// This class is used to record data and check for mismatches.
 ///
 /// Example:
-///     data_recorder recorder;
+///     datarecorder recorder;
 ///     recorder.set_recording_dir("test/recordings/mytest1.json");
-///     recorder.on_mismatch([](data_recorder::mismatch mismatch)
+///     recorder.on_mismatch([](datarecorder::mismatch mismatch)
 ///     {
 ///         std::cout << "Mismatch found!" << std::endl;
 ///         std::cout << "Recording data: " << mismatch.recording_data
@@ -34,16 +44,15 @@ namespace util
 ///     });
 ///     recorder.record("test data");
 ///
-class data_recorder
+class datarecorder
 {
 public:
-    /// Constructor
-    data_recorder() : m_monitor("data_recorder")
+    /// Default Constructor
+    datarecorder() : m_monitor("datarecorder")
     {
     }
 
-    /// Sets the recording path where data will be stored. The path must include
-    /// both the directory and the filename.
+    /// Sets the recording directory where data will be stored.
     ///
     /// Requirements:
     ///
@@ -61,7 +70,7 @@ public:
     /// Example: Given a cwd of `/home/user/project/build`, calling:
     ///
     ///     data_recorder recorder;
-    ///     recorder.set_recording_dir("test/recordings/mytest1.json");
+    ///     recorder.set_recording_dir("test/recordings");
     ///
     /// Will attempt to find the "test/recordings" directory in the following
     /// order:
@@ -72,8 +81,8 @@ public:
     /// - `/home/test/recordings/`
     /// - `/test/recordings/`
     ///
-    /// If the directory is found the recording file mytest1.json will be
-    /// created in that directory.
+    /// If the directory is found the recording file will be created in that
+    /// directory.
     ///
     /// Note, that resolving this may not be the best in all use-cases. So we
     /// may want to revisit this in the future. Additional options like setting
@@ -91,19 +100,6 @@ public:
             return;
         }
 
-        // The path is relative, so we need to resolve it. First split into
-        // directory and filename
-        auto base_path = recording_dir.parent_path();
-        auto file_name = recording_dir.filename();
-
-        auto cwd = std::filesystem::current_path();
-
-        if (base_path.empty())
-        {
-            m_recording_dir = cwd / file_name;
-            return;
-        }
-
         // Find the recording directory by iterating backwards from the cwd
         // until we find the first directory that exists
         auto find_result = find_relative_path(recording_dir);
@@ -113,16 +109,23 @@ public:
         m_recording_dir = *find_result;
     }
 
+    /// Set the recording filename. If not set the filename will be derived
+    /// from the current test name (assuming this is used in a Google Test
+    /// environment).
     void set_recording_filename(std::string filename)
     {
         // The file extension should be 2 or more characters ".something"
-        VERIFY(filename.size() > 2 && filename[0] == '.',
-               "Recording filename must start with .something", filename);
+        VERIFY(!filename.empty(), "Recording filename must not be empty",
+               filename);
 
         m_recording_filename = filename;
     }
 
-    void on_mismatch(std::function<poke::error(data_mismatch)> callback)
+    /// Set the callback that will be called when a mismatch is found.
+    ///
+    /// If no mismatch handler is set, the default mismatch handler will be
+    /// used.
+    void on_mismatch(std::function<poke::error(mismatch_info)> callback)
     {
         m_on_mismatch = callback;
     }
@@ -182,6 +185,7 @@ public:
         return {};
     }
 
+    /// Convenience function to record a vector of strings.
     auto record(const std::vector<std::string>& data)
         -> tl::expected<void, poke::error>
     {
@@ -194,6 +198,12 @@ public:
         return record(data_string);
     }
 
+    auto monitor() -> poke::monitor&
+    {
+        return m_monitor;
+    }
+
+private:
     auto testname_as_filename() -> std::string
     {
         // Get the current test name
@@ -210,12 +220,6 @@ public:
         return filename;
     }
 
-    auto monitor() -> poke::monitor&
-    {
-        return m_monitor;
-    }
-
-private:
     void determine_mismatch_handler()
     {
         auto visualizer = find_relative_path("visualizer/recording_diff.html");
@@ -226,7 +230,7 @@ private:
                           poke::log::str{"message", "Using diff visualizer"},
                           poke::log::str{"path", visualizer->string()});
 
-            m_on_mismatch = [this, visualizer](data_mismatch mismatch)
+            m_on_mismatch = [this, visualizer](mismatch_info mismatch)
             {
                 // Call the diff handler
                 return diff_mismatch_handler(*visualizer, mismatch);
@@ -239,7 +243,7 @@ private:
                 poke::log::str{"message", "Using default mismatch handler"},
                 poke::log::str{"path", visualizer.error().message()});
 
-            m_on_mismatch = [this](data_mismatch mismatch)
+            m_on_mismatch = [this](mismatch_info mismatch)
             {
                 // Call the default handler
                 return default_mismatch_handler(mismatch);
@@ -304,16 +308,16 @@ private:
         VERIFY(m_recording_filename.has_value(),
                "Recording filename must not be empty");
 
-        // If it exists we check for  a mismatch
-        std::filesystem::path mismatch_dir = determine_mismatch_dir();
-
         if (data != recording_data)
         {
+            // If it exists we check for a mismatch
+            std::filesystem::path mismatch_dir = determine_mismatch_dir();
+
             m_monitor.log(poke::log_level::debug,
                           poke::log::str{"message", "Mismatch found"});
 
             // We have a mismatch
-            data_mismatch mismatch;
+            mismatch_info mismatch;
             mismatch.recording_data = recording_data;
             mismatch.mismatch_data = data;
             mismatch.mismatch_dir = mismatch_dir;
@@ -345,8 +349,12 @@ private:
 
         // Iterate backwards from the current working directory until we
         // find the first directory that exists
+        // Iterate backwards from the current working directory until we
+        // find the first directory that exists
         auto current_path = std::filesystem::current_path();
-        while (!current_path.empty())
+        std::filesystem::path root_path = current_path.root_directory();
+
+        while (!current_path.empty() && current_path != root_path)
         {
             searched_paths.push_back(current_path / path);
             if (std::filesystem::exists(current_path / path))
@@ -355,6 +363,13 @@ private:
             }
 
             current_path = current_path.parent_path();
+        }
+
+        // Handle the case where the root directory is reached
+        if (current_path == root_path &&
+            std::filesystem::exists(current_path / path))
+        {
+            return current_path / path;
         }
 
         // If we get here, we could not find the path
@@ -371,7 +386,7 @@ private:
     }
 
     auto diff_mismatch_handler(std::filesystem::path recording_diff_html,
-                               data_mismatch mismatch) -> poke::error
+                               mismatch_info mismatch) -> poke::error
     {
 
         m_monitor.log(
@@ -428,7 +443,7 @@ private:
             poke::log::str{"html_diff", output_file.string()});
     }
 
-    auto default_mismatch_handler(data_mismatch mismatch) -> poke::error
+    auto default_mismatch_handler(mismatch_info mismatch) -> poke::error
 
     {
         /// We just return the mismatch as strings
@@ -444,7 +459,7 @@ private:
 
     std::optional<std::string> m_recording_filename;
     std::optional<std::filesystem::path> m_recording_dir;
-    std::optional<std::function<poke::error(data_mismatch)>> m_on_mismatch;
+    std::optional<std::function<poke::error(mismatch_info)>> m_on_mismatch;
 };
 
 }

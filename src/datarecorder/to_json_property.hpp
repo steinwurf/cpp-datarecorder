@@ -9,14 +9,14 @@
 
 #include <fmt/format.h>
 
-#include "data_mismatch.hpp"
+#include "mismatch_info.hpp"
 
-namespace util
+namespace datarecorder
 {
 
 /// Helpers to output the log
 inline void to_json_property(fmt::memory_buffer& buffer,
-                             const data_mismatch& element)
+                             const mismatch_info& element)
 {
     fmt::format_to(std::back_inserter(buffer), R"("mismatch_dir": "{}")",
                    element.mismatch_dir.string());

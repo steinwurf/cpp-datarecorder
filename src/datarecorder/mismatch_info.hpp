@@ -10,11 +10,11 @@
 #include <filesystem>
 #include <string>
 
-namespace util
+namespace datarecorder
 {
 
 /// Mismatch information
-struct data_mismatch
+struct mismatch_info
 {
     /// Data in the recording
     std::string recording_data;

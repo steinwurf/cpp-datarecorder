@@ -10,7 +10,7 @@
 #include <gtest/gtest.h>
 #include <poke/monitor.hpp>
 
-namespace util
+namespace datarecorder
 {
 
 /// This class is used to filter out keys from a JSON object.
