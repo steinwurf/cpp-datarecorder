@@ -6,7 +6,7 @@ import os
 
 
 APPNAME = "datarecorder"
-VERSION = "0.0.0"
+VERSION = "1.0.0"
 
 def options(ctx):
     ctx.load("cmake")
