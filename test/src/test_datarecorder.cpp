@@ -11,7 +11,6 @@
 
 TEST(datarecorder, record_string)
 {
-
     datarecorder::datarecorder recorder;
 
     recorder.set_recording_dir("test/recordings");
