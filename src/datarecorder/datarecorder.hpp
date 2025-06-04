@@ -32,7 +32,7 @@ namespace datarecorder
 /// Example:
 ///     datarecorder recorder;
 ///     recorder.set_recording_dir("test/recordings/mytest1.json");
-///     recorder.on_mismatch([](datarecorder::mismatch mismatch)
+///     recorder.on_mismatch([](datarecorder::mismatch_info mismatch)
 ///     {
 ///         std::cout << "Mismatch found!" << std::endl;
 ///         std::cout << "Recording data: " << mismatch.recording_data
