@@ -16,6 +16,9 @@ if(NOT DEFINED STEINWURF_RESOLVE)
 
 endif()
 
+# Include common CMake settings
+include("${STEINWURF_RESOLVE}/toolchains/common_settings.cmake")
+
 # poke dependency
 if(NOT TARGET steinwurf::poke)
   add_subdirectory("${STEINWURF_RESOLVE}/poke"
@@ -40,7 +43,7 @@ endif()
 
 # Define library
 add_library(datarecorder INTERFACE)
-target_compile_features(datarecorder INTERFACE cxx_std_14)
+target_compile_features(datarecorder INTERFACE cxx_std_17)
 target_include_directories(datarecorder INTERFACE src/)
 add_library(steinwurf::datarecorder ALIAS datarecorder)
 target_link_libraries(datarecorder
@@ -68,7 +71,7 @@ if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
   # Google Test dependency
   add_subdirectory("${STEINWURF_RESOLVE}/gtest" EXCLUDE_FROM_ALL)
 
-  
+
   # Get all steinwurf object libraries and link directly with them.
   get_property(steinwurf_object_libraries GLOBAL
     PROPERTY steinwurf::object_libraries)
