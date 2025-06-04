@@ -60,13 +60,10 @@ install(
   FILES_MATCHING
   PATTERN *.hpp)
 
-
-
 # Is top level project?
 if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
-  # Setup testing
-  enable_testing()
+
 
   # Google Test dependency
   add_subdirectory("${STEINWURF_RESOLVE}/gtest" EXCLUDE_FROM_ALL)
@@ -81,6 +78,7 @@ if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
 
   add_executable(datarecorder_test ${datarecorder_test_sources})
+  target_compile_features(datarecorder_test PRIVATE cxx_std_17)
   target_link_libraries(datarecorder_test datarecorder)
   target_link_libraries(datarecorder_test steinwurf::gtest)
   target_link_libraries(datarecorder_test ${steinwurf_object_libraries})
@@ -88,5 +86,8 @@ if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
 
   add_test(NAME datarecorder_test COMMAND datarecorder_test)
+
+   # Setup testing
+  enable_testing()
 
 endif()
