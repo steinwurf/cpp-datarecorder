@@ -6,7 +6,7 @@ every change, see the Git log.
 
 Latest
 ------
-* tbd
+* Minor: Dump file in mismatch dir for basic mismatch handler. 
 
 1.0.0
 -----

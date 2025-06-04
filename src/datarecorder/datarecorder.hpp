@@ -461,9 +461,17 @@ private:
     auto default_mismatch_handler(mismatch_info mismatch) -> poke::error
 
     {
+        // Also write the mismatch data to the mismatch dir
+        std::filesystem::path mismatch_path =
+            mismatch.mismatch_dir / mismatch.recording_path.filename();
+
+        write_data(mismatch_path, mismatch.mismatch_data);
+
         /// We just return the mismatch as strings
         return poke::make_error(
             std::make_error_code(std::errc::invalid_argument),
+            poke::log::str{"recording_path:", mismatch.recording_path.string()},
+            poke::log::str{"mismatch_path:", mismatch_path.string()},
             poke::log::str{"recording_data:", mismatch.recording_data},
             poke::log::str{"mismatch_data:", mismatch.mismatch_data});
     }
