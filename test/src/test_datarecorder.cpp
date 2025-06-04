@@ -1,3 +1,8 @@
+// Copyright (c) 2025 Steinwurf ApS
+// All Rights Reserved
+//
+// Distributed under the "BSD License". See the accompanying LICENSE.rst file.
+
 #include <datarecorder/datarecorder.hpp>
 #include <filesystem>
 #include <fstream>
@@ -6,7 +11,6 @@
 
 TEST(datarecorder, record_string)
 {
-
     datarecorder::datarecorder recorder;
 
     recorder.set_recording_dir("test/recordings");

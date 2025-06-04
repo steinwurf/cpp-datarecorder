@@ -1,9 +1,7 @@
 // Copyright (c) 2025 Steinwurf ApS
 // All Rights Reserved
 //
-// THIS IS UNPUBLISHED PROPRIETARY SOURCE CODE OF STEINWURF
-// The copyright notice above does not evidence any
-// actual or intended publication of such source code.
+// Distributed under the "BSD License". See the accompanying LICENSE.rst file.
 
 #pragma once
 
@@ -123,8 +121,25 @@ public:
 
     /// Set the callback that will be called when a mismatch is found.
     ///
-    /// If no mismatch handler is set, the default mismatch handler will be
-    /// used.
+    /// If no mismatch handler is set, a default mismatch handler will be used.
+    /// The callback should return a `poke::error` object describing the
+    /// mismatch.
+    ///
+    /// Example:
+    ///     recorder.on_mismatch([](datarecorder::mismatch_info mismatch)
+    ///     {
+    ///         std::cout << "Mismatch found!" << std::endl;
+    ///         std::cout << "Recording data: " << mismatch.recording_data
+    ///                   << std::endl;
+    ///         std::cout << "Mismatch data: " << mismatch.mismatch_data
+    ///                   << std::endl;
+    ///         return poke::make_error(
+    ////            std::make_error_code(std::errc::invalid_argument),
+    ///                                 poke::log::str{"recording_data",
+    ///                                 mismatch.recording_data},
+    ///                                 poke::log::str{"mismatch_data",
+    ///                                 mismatch.mismatch_data});
+    ///     });
     void on_mismatch(std::function<poke::error(mismatch_info)> callback)
     {
         m_on_mismatch = callback;

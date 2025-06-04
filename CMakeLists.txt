@@ -16,6 +16,9 @@ if(NOT DEFINED STEINWURF_RESOLVE)
 
 endif()
 
+# Include common CMake settings
+include("${STEINWURF_RESOLVE}/toolchains/common_settings.cmake")
+
 # poke dependency
 if(NOT TARGET steinwurf::poke)
   add_subdirectory("${STEINWURF_RESOLVE}/poke"
@@ -40,7 +43,7 @@ endif()
 
 # Define library
 add_library(datarecorder INTERFACE)
-target_compile_features(datarecorder INTERFACE cxx_std_14)
+target_compile_features(datarecorder INTERFACE cxx_std_17)
 target_include_directories(datarecorder INTERFACE src/)
 add_library(steinwurf::datarecorder ALIAS datarecorder)
 target_link_libraries(datarecorder
@@ -57,18 +60,15 @@ install(
   FILES_MATCHING
   PATTERN *.hpp)
 
-
-
 # Is top level project?
 if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
-  # Setup testing
-  enable_testing()
+
 
   # Google Test dependency
   add_subdirectory("${STEINWURF_RESOLVE}/gtest" EXCLUDE_FROM_ALL)
 
-  
+
   # Get all steinwurf object libraries and link directly with them.
   get_property(steinwurf_object_libraries GLOBAL
     PROPERTY steinwurf::object_libraries)
@@ -78,6 +78,7 @@ if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
 
   add_executable(datarecorder_test ${datarecorder_test_sources})
+  target_compile_features(datarecorder_test PRIVATE cxx_std_17)
   target_link_libraries(datarecorder_test datarecorder)
   target_link_libraries(datarecorder_test steinwurf::gtest)
   target_link_libraries(datarecorder_test ${steinwurf_object_libraries})
@@ -85,5 +86,8 @@ if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
 
   add_test(NAME datarecorder_test COMMAND datarecorder_test)
+
+   # Setup testing
+  enable_testing()
 
 endif()
