@@ -6,7 +6,7 @@ every change, see the Git log.
 
 Latest
 ------
-* tbd
+* Patch: Fix infinite loop on Windows when looking for recording directory.
 
 1.0.0
 -----

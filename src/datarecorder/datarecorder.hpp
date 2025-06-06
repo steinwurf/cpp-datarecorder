@@ -367,7 +367,7 @@ private:
         // Iterate backwards from the current working directory until we
         // find the first directory that exists
         auto current_path = std::filesystem::current_path();
-        std::filesystem::path root_path = current_path.root_directory();
+        std::filesystem::path root_path = current_path.root_path();
 
         while (!current_path.empty() && current_path != root_path)
         {
