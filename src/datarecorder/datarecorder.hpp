@@ -266,7 +266,7 @@ private:
         }
     }
 
-    auto determine_mismatch_dir() -> std::filesystem::path
+    auto determine_mismatch_path() -> std::filesystem::path
     {
         VERIFY(m_recording_dir, "Recording dir must not be empty");
 
@@ -282,17 +282,22 @@ private:
             mismatch_dir = tmp_dir / ("cppmismatch-" + std::to_string(i));
         }
 
-        // Create the directory
-        std::error_code ec;
-        bool created = std::filesystem::create_directory(mismatch_dir, ec);
-
-        VERIFY(created, "Could not create directory", ec);
-
+        // Return the path without creating the directory
         return mismatch_dir;
     }
 
     void write_data(const std::filesystem::path& path, const std::string& data)
     {
+        // Create parent directories if they don't exist
+        std::filesystem::path parent_dir = path.parent_path();
+        if (!parent_dir.empty() && !std::filesystem::exists(parent_dir))
+        {
+            std::error_code ec;
+            bool created = std::filesystem::create_directories(parent_dir, ec);
+            VERIFY(created || std::filesystem::exists(parent_dir), 
+                   "Could not create parent directories", ec, parent_dir);
+        }
+
         std::ofstream file(path, std::ios::out | std::ios::trunc);
         VERIFY(file.is_open(), "Could not open file for writing", errno, path);
 
@@ -326,7 +331,7 @@ private:
         if (data != recording_data)
         {
             // If it exists we check for a mismatch
-            std::filesystem::path mismatch_dir = determine_mismatch_dir();
+            std::filesystem::path mismatch_dir = determine_mismatch_path();
 
             m_monitor.log(poke::log_level::debug,
                           poke::log::str{"message", "Mismatch found"});
