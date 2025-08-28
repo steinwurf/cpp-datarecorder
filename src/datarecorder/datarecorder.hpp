@@ -294,7 +294,7 @@ private:
         {
             std::error_code ec;
             bool created = std::filesystem::create_directories(parent_dir, ec);
-            VERIFY(created || std::filesystem::exists(parent_dir), 
+            VERIFY(created || std::filesystem::exists(parent_dir),
                    "Could not create parent directories", ec, parent_dir);
         }
 

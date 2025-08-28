@@ -41,7 +41,7 @@ TEST(datarecorder, mismatch_directory_only_created_when_needed)
     int initial_count = 0;
     for (const auto& entry : std::filesystem::directory_iterator(tmp_dir))
     {
-        if (entry.is_directory() && 
+        if (entry.is_directory() &&
             entry.path().filename().string().find("cppmismatch-") == 0)
         {
             initial_count++;
@@ -56,7 +56,7 @@ TEST(datarecorder, mismatch_directory_only_created_when_needed)
     int final_count = 0;
     for (const auto& entry : std::filesystem::directory_iterator(tmp_dir))
     {
-        if (entry.is_directory() && 
+        if (entry.is_directory() &&
             entry.path().filename().string().find("cppmismatch-") == 0)
         {
             final_count++;
