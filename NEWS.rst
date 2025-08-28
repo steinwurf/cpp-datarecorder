@@ -6,6 +6,10 @@ every change, see the Git log.
 
 Latest
 ------
+* tbd
+
+1.0.2
+-----
 * Patch: Stopped the creation of mismatch dir when no files will be written to it.
 
 1.0.1
