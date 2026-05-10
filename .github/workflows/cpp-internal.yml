@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - development
   pull_request:
 jobs:
   linux_cmake:
@@ -49,7 +50,7 @@ jobs:
       - name: Waf Build
         run: python3 waf build
       - name: Waf Run Tests
-        run: python3 waf --run_tests
+        run: sudo python3 waf --run_tests
 
   valgrind:
     timeout-minutes: 45
@@ -68,13 +69,17 @@ jobs:
       - name: Waf Build
         run: python3 waf build
       - name: Waf Run Tests
-        run: python3 waf --run_tests --ctest_valgrind
+        run: sudo python3 waf --run_tests --ctest_valgrind
   zig_toolchain_build:
     name: Zig Toolchain Build (Docker)
     runs-on: [self-hosted, vm, ubuntu-current]
     container:
       image: ghcr.io/steinwurf/build-images/zig-cpp
-      options: --user 0:0
+      options: >-
+        --user 0:0
+        --cap-add=NET_ADMIN
+        --cap-add=SYS_ADMIN
+        --device /dev/net/tun
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
