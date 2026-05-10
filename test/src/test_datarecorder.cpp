@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <iostream>
 #include <string>
 
 TEST(datarecorder, record_string)
@@ -23,6 +24,22 @@ TEST(datarecorder, record_string)
     data = "hello world!";
     auto mismatch_result = recorder.record(data);
     EXPECT_FALSE(mismatch_result);
+}
+
+TEST(datarecorder, print_mismatch_error_output)
+{
+    datarecorder::datarecorder recorder;
+
+    recorder.set_recording_dir("test/recordings");
+
+    auto result = recorder.record("baseline output");
+    ASSERT_TRUE(result);
+
+    auto mismatch_result = recorder.record("changed output");
+    ASSERT_FALSE(mismatch_result);
+
+    std::cerr << "\n[datarecorder mismatch error]\n"
+              << mismatch_result.error() << "\n";
 }
 
 TEST(datarecorder, mismatch_directory_only_created_when_needed)
