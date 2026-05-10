@@ -19,6 +19,7 @@
 #include <tl/expected.hpp>
 #include <verify/verify.hpp>
 
+#include "in_github_actions.hpp"
 #include "mismatch_info.hpp"
 #include "to_json_property.hpp"
 
@@ -489,11 +490,22 @@ private:
 
         write_data(mismatch_path, mismatch.mismatch_data);
 
+        if (in_github_actions())
+        {
+            return poke::make_error(
+                std::make_error_code(std::errc::invalid_argument),
+                poke::log::str{"message", "Mismatch found"},
+                poke::log::str{"recording_data:", mismatch.recording_data},
+                poke::log::str{"mismatch_data:", mismatch.mismatch_data},
+                poke::log::str{"recording_path:",
+                               mismatch.recording_path.string()},
+                poke::log::str{"mismatch_path:", mismatch_path.string()},
+                poke::log::str{"html_diff", output_file.string()});
+        }
+
         return poke::make_error(
             std::make_error_code(std::errc::invalid_argument),
             poke::log::str{"message", "Mismatch found"},
-            poke::log::str{"recording_data:", mismatch.recording_data},
-            poke::log::str{"mismatch_data:", mismatch.mismatch_data},
             poke::log::str{"recording_path:", mismatch.recording_path.string()},
             poke::log::str{"mismatch_path:", mismatch_path.string()},
             poke::log::str{"html_diff", output_file.string()});
@@ -503,10 +515,17 @@ private:
 
     {
         /// We just return the mismatch as strings
+        if (in_github_actions())
+        {
+            return poke::make_error(
+                std::make_error_code(std::errc::invalid_argument),
+                poke::log::str{"recording_data:", mismatch.recording_data},
+                poke::log::str{"mismatch_data:", mismatch.mismatch_data});
+        }
+
         return poke::make_error(
             std::make_error_code(std::errc::invalid_argument),
-            poke::log::str{"recording_data:", mismatch.recording_data},
-            poke::log::str{"mismatch_data:", mismatch.mismatch_data});
+            poke::log::str{"message", "Mismatch found"});
     }
 
 private:

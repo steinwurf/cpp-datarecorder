@@ -87,7 +87,13 @@ jobs:
           persist-credentials: false
       - name: Configure Github Authentication
         run: |
-          git config --global url."https://x-access-token:${{ secrets.GH_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config --global credential.helper 'store'
+          git credential approve <<EOF
+          protocol=https
+          host=github.com
+          username=x-access-token
+          password=${{ secrets.GH_ACCESS_TOKEN }}
+          EOF
       - name: Waf Configure with Zig Toolchain
         run: python3 waf configure --git_protocol=https:// --cmake_toolchain=./resolve_symlinks/toolchains/zig-toolchain-x86_64-linux-musl.cmake --cmake_verbose
       - name: Waf Build with Zig Toolchain
