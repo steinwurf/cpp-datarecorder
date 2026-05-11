@@ -19,6 +19,7 @@
 #include <tl/expected.hpp>
 #include <verify/verify.hpp>
 
+#include "in_github_actions.hpp"
 #include "mismatch_info.hpp"
 #include "to_json_property.hpp"
 
@@ -117,6 +118,20 @@ public:
                filename);
 
         m_recording_filename = filename;
+    }
+
+    /// Set the mismatch template used for mismatch HTML output.
+    ///
+    /// If this path is relative, it will be resolved by searching backwards
+    /// from the current working directory.
+    ///
+    /// If this path is provided and cannot be found, recording will fail.
+    void set_mismatch_template(std::filesystem::path mismatch_template)
+    {
+        VERIFY(!mismatch_template.empty(),
+               "Mismatch template path must not be empty", mismatch_template);
+
+        m_mismatch_template = mismatch_template;
     }
 
     /// Set the callback that will be called when a mismatch is found.
@@ -237,33 +252,43 @@ private:
 
     void determine_mismatch_handler()
     {
-        auto visualizer = find_relative_path("visualizer/recording_diff.html");
+        tl::expected<std::filesystem::path, poke::error> mismatch_template =
+            find_relative_path(
+                m_mismatch_template.value_or("visualizer/recording_diff.html"));
 
-        if (visualizer)
+        if (mismatch_template)
         {
             m_monitor.log(poke::log_level::debug,
-                          poke::log::str{"message", "Using diff visualizer"},
-                          poke::log::str{"path", visualizer->string()});
+                          poke::log::str{"message", "Using mismatch template"},
+                          poke::log::str{"path", mismatch_template->string()});
 
-            m_on_mismatch = [this, visualizer](mismatch_info mismatch)
+            m_on_mismatch = [this, mismatch_template = *mismatch_template](
+                                mismatch_info mismatch)
             {
                 // Call the diff handler
-                return diff_mismatch_handler(*visualizer, mismatch);
+                return diff_mismatch_handler(mismatch_template, mismatch);
             };
+            return;
         }
-        else
-        {
-            m_monitor.log(
-                poke::log_level::debug,
-                poke::log::str{"message", "Using default mismatch handler"},
-                poke::log::str{"path", visualizer.error().message()});
 
-            m_on_mismatch = [this](mismatch_info mismatch)
-            {
-                // Call the default handler
-                return default_mismatch_handler(mismatch);
-            };
+        if (m_mismatch_template)
+        {
+            VERIFY(mismatch_template,
+                   "Could not find configured mismatch template",
+                   m_mismatch_template.value(),
+                   mismatch_template.error().message());
         }
+
+        m_monitor.log(
+            poke::log_level::debug,
+            poke::log::str{"message", "Using default mismatch handler"},
+            poke::log::str{"path", mismatch_template.error().message()});
+
+        m_on_mismatch = [this](mismatch_info mismatch)
+        {
+            // Call the default handler
+            return default_mismatch_handler(mismatch);
+        };
     }
 
     auto determine_mismatch_path() -> std::filesystem::path
@@ -435,6 +460,18 @@ private:
         std::regex oldTextPattern(R"((const\s+oldText\s*=\s*`)([^`]*)(`;))");
         std::regex newTextPattern(R"((const\s+newText\s*=\s*`)([^`]*)(`;))");
 
+        if (!std::regex_search(file_content, oldTextPattern) ||
+            !std::regex_search(file_content, newTextPattern))
+        {
+            return poke::make_error(
+                std::make_error_code(std::errc::invalid_argument),
+                poke::log::str{"message",
+                               "Mismatch template must contain both `const "
+                               "oldText = `...`;` "
+                               "and `const newText = `...`;` markers"},
+                poke::log::str{"template_path", recording_diff_html.string()});
+        }
+
         file_content = std::regex_replace(file_content, oldTextPattern,
                                           "$1" + escaped_recording_data + "$3");
         file_content = std::regex_replace(file_content, newTextPattern,
@@ -453,11 +490,22 @@ private:
 
         write_data(mismatch_path, mismatch.mismatch_data);
 
+        if (in_github_actions())
+        {
+            return poke::make_error(
+                std::make_error_code(std::errc::invalid_argument),
+                poke::log::str{"message", "Mismatch found"},
+                poke::log::str{"recording_data:", mismatch.recording_data},
+                poke::log::str{"mismatch_data:", mismatch.mismatch_data},
+                poke::log::str{"recording_path:",
+                               mismatch.recording_path.string()},
+                poke::log::str{"mismatch_path:", mismatch_path.string()},
+                poke::log::str{"html_diff", output_file.string()});
+        }
+
         return poke::make_error(
             std::make_error_code(std::errc::invalid_argument),
             poke::log::str{"message", "Mismatch found"},
-            poke::log::str{"recording_data:", mismatch.recording_data},
-            poke::log::str{"mismatch_data:", mismatch.mismatch_data},
             poke::log::str{"recording_path:", mismatch.recording_path.string()},
             poke::log::str{"mismatch_path:", mismatch_path.string()},
             poke::log::str{"html_diff", output_file.string()});
@@ -467,10 +515,17 @@ private:
 
     {
         /// We just return the mismatch as strings
+        if (in_github_actions())
+        {
+            return poke::make_error(
+                std::make_error_code(std::errc::invalid_argument),
+                poke::log::str{"recording_data:", mismatch.recording_data},
+                poke::log::str{"mismatch_data:", mismatch.mismatch_data});
+        }
+
         return poke::make_error(
             std::make_error_code(std::errc::invalid_argument),
-            poke::log::str{"recording_data:", mismatch.recording_data},
-            poke::log::str{"mismatch_data:", mismatch.mismatch_data});
+            poke::log::str{"message", "Mismatch found"});
     }
 
 private:
@@ -479,6 +534,7 @@ private:
 
     std::optional<std::string> m_recording_filename;
     std::optional<std::filesystem::path> m_recording_dir;
+    std::optional<std::filesystem::path> m_mismatch_template;
     std::optional<std::function<poke::error(mismatch_info)>> m_on_mismatch;
 };
 

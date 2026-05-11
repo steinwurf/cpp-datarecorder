@@ -16,6 +16,10 @@ cmake_build
 
 # Python
 *.pyc
+.venv/
+
+# Devbox
+devbox.lock
 
 # Compiled Doxygen documentation
 /doxygen/html
